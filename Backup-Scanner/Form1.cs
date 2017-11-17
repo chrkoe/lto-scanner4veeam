@@ -69,7 +69,7 @@ namespace Backup_Scanner
                         inputTextBox.ReadOnly = false;
                         break;
                     case "Gold":
-                        conn.Text = "Connecting";
+                        conn.Text = "Connecting to " + server;
                         break;
                 }
             }
