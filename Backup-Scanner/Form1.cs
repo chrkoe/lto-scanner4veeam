@@ -38,6 +38,7 @@ namespace Backup_Scanner
         private XmlDocument settings;
         private PSSnapInException snapEx = null;
         private PSSnapInInfo psinfo;
+        private bool snapin = true;
 
         public DefaultWindow()
         {
@@ -59,6 +60,7 @@ namespace Backup_Scanner
                 //shows message boxes when addin could not be added
                 MessageBox.Show(null, pse.Message, "Error");
                 MessageBox.Show(null, "Please make sure, that you have the \"VeeamPSSnapin\" installed! Verify your \"Veeam Backup & Replication\" installation", "Missing PSSnapin?");
+                snapin = false;
             }
             catch (Exception e)
             {
@@ -672,6 +674,30 @@ namespace Backup_Scanner
         {
             this.Enabled = true;
             reloadGUI();
+        }
+
+        private void DefaultWindow_Shown(object sender, EventArgs e)
+        {
+            if (!snapin)
+                this.Close();
+        }
+
+        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            String text = "First use" + Environment.NewLine + "---" + Environment.NewLine + "If you are using this tool for the first time you have to specify your backup server and domain name in the settings. " +
+                "You can find the settings in the main menu. " + Environment.NewLine + Environment.NewLine +
+                "Connecting" + Environment.NewLine + "---" + Environment.NewLine + "To connect to your server you have to login with a user. If this is a domain user you can specify a domain name in the settings. This domain name will automatically be added before your username." + 
+                Environment.NewLine + "Example: When you login with DOMAIN\\USERNAME you can save the DOMAIN in the settings.";
+            MessageBox.Show(null, text, "Help");
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            String text = "LTO-Scanner4Veeam" + Environment.NewLine + 
+                "is under the GNUv3 license. You can view the development process on the github site: https://github.com/chrkoe/lto-scanner4veeam" + Environment.NewLine + 
+                Environment.NewLine + 
+                "To use this tool you need an installation of Veeam Backup & Replication. We are only using the given PowerShell Snapin. For more information about Veeam and Veeam Backup & Replication visit https://veeam.com";
+            MessageBox.Show(null, text, "About");
         }
     }
 }
