@@ -110,6 +110,10 @@ namespace Backup_Scanner
                     if (connected)
                     {
                         ps.AddScript("Disconnect-VBRServer");
+                        inputReadOnly();
+                        usernameTextBox.Enabled = true;
+                        passwordTextBox.Enabled = true;
+                        loginButton.Enabled = true;
                         connectLabel.BackColor = Color.Red;
                     }
                     server = settings.DocumentElement.SelectSingleNode("/configuration/backupServer").InnerText;
