@@ -110,6 +110,10 @@ namespace Backup_Scanner
                     if (connected)
                     {
                         ps.AddScript("Disconnect-VBRServer");
+                        inputReadOnly();
+                        usernameTextBox.Enabled = true;
+                        passwordTextBox.Enabled = true;
+                        loginButton.Enabled = true;
                         connectLabel.BackColor = Color.Red;
                     }
                     server = settings.DocumentElement.SelectSingleNode("/configuration/backupServer").InnerText;
@@ -275,17 +279,10 @@ namespace Backup_Scanner
                 Console.WriteLine(user);
                 try
                 {
-                    ps.AddScript("Get-PSSnapin");
-                    IEnumerable<PSObject> results = ps.Invoke();
-                    foreach (var result in results)
-                    {
-                        writeToOutput("Loaded snapin: " + result.Properties["Name"].Value + System.Environment.NewLine);
-                    }
-
                     //connecting to the specified server with username and password
                     ps.AddScript("Connect-VBRServer -Server " + server + " -User \"" + user + "\" -Password \"" + pass + "\"");
                     ps.AddScript("Get-VBRServerSession");
-                     results = ps.Invoke();
+                    IEnumerable<PSObject> results = ps.Invoke();
                     PSDataCollection<ErrorRecord> stream = ps.Streams.Error;
                     foreach (ErrorRecord err in stream)
                     {

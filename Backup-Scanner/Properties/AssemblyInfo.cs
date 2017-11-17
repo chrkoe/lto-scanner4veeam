@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 // Allgemeine Informationen über eine Assembly werden über die folgenden 
 // Attribute gesteuert. Ändern Sie diese Attributwerte, um die Informationen zu ändern,
 // die einer Assembly zugeordnet sind.
-[assembly: AssemblyTitle("Backup-Scanner")]
-[assembly: AssemblyDescription("Program to search for Tapes in Veeam Backup&Replication Server")]
+[assembly: AssemblyTitle("LTO-Scanner4Veeam")]
+[assembly: AssemblyDescription("Program to search for tapes in Veeam Backup&Replication Server")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Fraunhofer WKI")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Backup-Scanner")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
