@@ -19,11 +19,22 @@ namespace Backup_Scanner
 {
     public partial class DefaultWindow : Form
     {
+        /// <summary>
+        /// variable that saves the connection state
+        /// </summary>
         private bool connected = false;
         private Runspace rs;
         private PowerShell ps = PowerShell.Create();
         private RunspaceConfiguration rsc = RunspaceConfiguration.Create();
-        private String bc = "", server = "", domain = "";
+        /// <summary>
+        /// save the server name
+        /// </summary>
+        private String server = "";
+        /// <summary>
+        /// save the domain name
+        /// </summary>
+        private String domain = "";
+        private String bc = "";
         private XmlDocument settings;
         private PSSnapInException snapEx = null;
         private PSSnapInInfo psinfo;
@@ -31,8 +42,11 @@ namespace Backup_Scanner
         public DefaultWindow()
         {
             InitializeComponent();
+            
+            //add an eventhandler to change the text in the connectLabel
             connectLabel.BackColorChanged += connectChanged;
             reloadGUI();
+            //try adding the VeeamPSSnapin to the Powershell
             try
             {
                 psinfo = rsc.AddPSSnapIn("VeeamPSSnapin", out snapEx);
@@ -42,6 +56,7 @@ namespace Backup_Scanner
                 ps.Streams.Error.DataAdded += Error_DataAdded;
             } catch (PSArgumentException pse)
             {
+                //shows message boxes when addin could not be added
                 MessageBox.Show(null, pse.Message, "Error");
                 MessageBox.Show(null, "Please make sure, that you have the \"VeeamPSSnapin\" installed! Verify your \"Veeam Backup & Replication\" installation", "Missing PSSnapin?");
             }
@@ -52,6 +67,11 @@ namespace Backup_Scanner
             this.ActiveControl = usernameTextBox;
         }
 
+        /// <summary>
+        /// eventHandler that changes the text in the connectLabel based on the current color
+        /// </summary>
+        /// <param name="sender">connectLabel</param>
+        /// <param name="e"></param>
         private void connectChanged(object sender, EventArgs e)
         {
             if (sender is Label) {
@@ -76,9 +96,13 @@ namespace Backup_Scanner
             //throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// change the visibility of elements in the gui based on the settings file
+        /// </summary>
         private void reloadGUI()
         {
             settings = loadConfigDocument();
+            //check if the backupserver name has changed
             if (settings.DocumentElement.SelectSingleNode("/configuration/backupServer") != null)
             {
                 if (server != settings.DocumentElement.SelectSingleNode("/configuration/backupServer").InnerText)
@@ -91,8 +115,10 @@ namespace Backup_Scanner
                     server = settings.DocumentElement.SelectSingleNode("/configuration/backupServer").InnerText;
                 }
             }
+            //save the domain name from the settings file
             if (settings.DocumentElement.SelectSingleNode("/configuration/domainName") != null)
                 domain = settings.DocumentElement.SelectSingleNode("/configuration/domainName").InnerText;
+            //display or hide fields based on the settings file
             XmlNode xml = settings.DocumentElement.SelectSingleNode("displayValues");
             XmlNodeList displayValues = xml.ChildNodes;
             foreach (XmlNode att in displayValues)
@@ -181,6 +207,11 @@ namespace Backup_Scanner
             }
         }
 
+        /// <summary>
+        /// eventHandler for the PowerShell when an error occured while searching for a tape
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Error_DataAdded(object sender, DataAddedEventArgs e)
         {
             writeToOutput(System.Environment.NewLine + ps.Streams.Error.ElementAt(0).Exception.Message + System.Environment.NewLine);
@@ -195,8 +226,14 @@ namespace Backup_Scanner
             //throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// perform login when the button is clicked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void login_clicked(object sender, EventArgs e)
         {
+            //check for entered username and password
             if (usernameTextBox.Text.Length == 0)
             {
                 writeToOutput("No username entered" + System.Environment.NewLine);
@@ -210,6 +247,7 @@ namespace Backup_Scanner
                 connectLabel.BackColor = Color.Gold;
                 String user = usernameTextBox.Text;
                 String pass = passwordTextBox.Text;
+                //if a domain is specified in the settings it must be verified that the user did not entered the domain in the username field
                 if (domain != "")
                 {
                     char[] dom = user.Take(domain.ToLower().Length + 1).ToArray();
@@ -232,11 +270,12 @@ namespace Backup_Scanner
                         }
                     }
                     if (addDom.Where(c => c).Count() == (domain.Length))
-                        user = domain + "\\" + user;
+                        user = domain + '\\' + user;
                 }
                 Console.WriteLine(user);
                 try
                 {
+                    //connecting to the specified server with username and password
                     ps.AddScript("Connect-VBRServer -Server " + server + " -User \"" + user + "\" -Password \"" + pass + "\"");
                     ps.AddScript("Get-VBRServerSession");
                     IEnumerable<PSObject> results = ps.Invoke();
@@ -272,6 +311,11 @@ namespace Backup_Scanner
             }
         }
 
+        /// <summary>
+        /// close the Powershell when closing the window
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void formClose(object sender, FormClosedEventArgs e)
         {
             try
@@ -284,10 +328,16 @@ namespace Backup_Scanner
             }
         }
 
+        /// <summary>
+        /// starts a new thread to search for the tape.
+        /// the thread is required to disable the input field while the search is running
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void getTapeInfo(object sender, EventArgs e)
         {
             Thread t = new Thread(TapeInfo);
-            if (connected && inputTextBox.Text.Length > 0 &&inputTextBox.ReadOnly == false)
+            if (connected && inputTextBox.Text.Length > 0 && inputTextBox.ReadOnly == false)
             {
                 bc = inputTextBox.Text;
                 if (t.ThreadState == ThreadState.Unstarted)
@@ -297,6 +347,9 @@ namespace Backup_Scanner
             }
         }
 
+        /// <summary>
+        /// searches for the given tape name and writes the values to the gui
+        /// </summary>
         private void TapeInfo()
         {
             inputReadOnly();
@@ -364,18 +417,32 @@ namespace Backup_Scanner
             inputReadOnly();
         }
 
+        /// <summary>
+        /// perform the login when pressing enter in the login fields
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void loginPressed(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)Keys.Enter)
                 login_clicked(sender, e);
         }
 
+        /// <summary>
+        /// start a new search when hitting the enter key in the input field
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void inputKeyPressed(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)Keys.Enter)
                 getTapeInfo(sender, e);
         }
 
+        /// <summary>
+        /// changing the text of the inputTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeInputTextBox(String text)
         {
             if (InvokeRequired)
@@ -386,6 +453,10 @@ namespace Backup_Scanner
             inputTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the text of the barcodeTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeBarcodeTextBox(String text)
         {
             if (InvokeRequired)
@@ -396,6 +467,10 @@ namespace Backup_Scanner
             barcodeTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the text of the locationTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeLocationTextBox(String text)
         {
             if (InvokeRequired)
@@ -406,6 +481,10 @@ namespace Backup_Scanner
             locationTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the text of the vaultTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeVaultTextBox(String text)
         {
             if (InvokeRequired)
@@ -416,6 +495,10 @@ namespace Backup_Scanner
             vaultTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the text of the freeTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeFreeTextBox(String text)
         {
             if (InvokeRequired)
@@ -426,6 +509,9 @@ namespace Backup_Scanner
             freeTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the color of the freeTextBox based on the content
+        /// </summary>
         private void changeFreeTextBox()
         {
             if (InvokeRequired)
@@ -438,6 +524,10 @@ namespace Backup_Scanner
             else { freeTextBox.BackColor = DefaultWindow.DefaultBackColor; }
         }
 
+        /// <summary>
+        /// changing the text of the expiredTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeExpiredTextBox(String text)
         {
             if (InvokeRequired)
@@ -448,6 +538,9 @@ namespace Backup_Scanner
             expiredTextBox.Text = text;
         }
 
+        /// <summary>
+        /// changing the color of the expiredTextBox based on the content
+        /// </summary>
         private void changeExpiredTextBox()
         {
             if (InvokeRequired)
@@ -460,6 +553,10 @@ namespace Backup_Scanner
             else { expiredTextBox.BackColor = DefaultWindow.DefaultBackColor; }
         }
 
+        /// <summary>
+        /// changing the text of the expirationDateTextBox
+        /// </summary>
+        /// <param name="text">text to write</param>
         private void changeExpirationDateTextBox(String text)
         {
             if (InvokeRequired)
@@ -470,6 +567,9 @@ namespace Backup_Scanner
             expirationDateTextBox.Text = text;
         }
 
+        /// <summary>
+        /// enables or disables the inputTextBox
+        /// </summary>
         private void inputReadOnly()
         {
             if (InvokeRequired)
@@ -481,6 +581,10 @@ namespace Backup_Scanner
             else { inputTextBox.ReadOnly = true; }
         }
 
+        /// <summary>
+        /// adding text to the outoutTextBox
+        /// </summary>
+        /// <param name="message">text to add</param>
         private void writeToOutput(String message)
         {
             if (InvokeRequired)
@@ -491,6 +595,10 @@ namespace Backup_Scanner
             outputTextBox.AppendText(message);
         }
 
+        /// <summary>
+        /// loads the config file
+        /// </summary>
+        /// <returns>XmlDocument config file</returns>
         private static XmlDocument loadConfigDocument()
         {
             XmlDocument doc = null;
@@ -510,6 +618,10 @@ namespace Backup_Scanner
             }
         }
 
+        /// <summary>
+        /// searching for the config file. primary in localAppData, secondary in programfiles directory
+        /// </summary>
+        /// <returns>String path to the found config file</returns>
         private static String getConfigFilePath()
         {
             String output;
@@ -534,6 +646,11 @@ namespace Backup_Scanner
             this.Close();
         }
 
+        /// <summary>
+        /// open the SettingsForm from the Main menu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SettingsForm sf = new SettingsForm(settings);
@@ -542,6 +659,11 @@ namespace Backup_Scanner
             this.Enabled = false;
         }
 
+        /// <summary>
+        /// reload the Gui when the SettingsForm is closed
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void sfClosing(object sender, FormClosingEventArgs e)
         {
             this.Enabled = true;
