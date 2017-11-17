@@ -221,6 +221,9 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+!Backup-Scanner/*
+Backup-Scanner/bin/
+Backup-Scanner/obj/
 UpgradeLog*.XML
 UpgradeLog*.htm
 
